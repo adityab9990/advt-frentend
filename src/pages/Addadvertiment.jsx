@@ -8,31 +8,36 @@ const AdvtForm = () => {
     size: '', billRupees: '', publishingDate: '', file: null
   });
 
-  const handleSubmit = async (e) => {
+const handleSubmit = async (e) => {
     e.preventDefault();
     const data = new FormData();
     
-    // Add these console logs to see what you are actually sending
-    console.log("Form Data:", formData);
+    if (formData.file) {
+        data.append('file', formData.file);
+    } else {
+        alert("Please select a file!");
+        return;
+    }
 
-    data.append('file', formData.file);
     data.append('advtNo', formData.advtNo);
     data.append('advtName', formData.advtName);
     data.append('department', formData.department);
     data.append('category', formData.category);
     data.append('size', formData.size);
-    data.append('billRupees', formData.billRupees);
+    data.append('billRupees', formData.billRupees || 0);
     data.append('publishingDate', formData.publishingDate);
     
     try {
-        const response = await axios.post('http://localhost:8080/api/advertisements/upload', data, {
-            headers: { 'Content-Type': 'multipart/form-data' }
+        // FIXED: Added headers configuration
+        await axios.post('https://advt-backend-xuoo.onrender.com/api/advertisements/upload', data, {
+            headers: {
+                'Content-Type': 'multipart/form-data'
+            }
         });
-        console.log("Success:", response.data);
-        alert("Advertisement added successfully!");
+        alert("Success!");
     } catch (err) {
-        // This will print the full backend error message
-        console.error("Backend Error:", err.response ? err.response.data : err.message);
+        console.error("Error:", err);
+        alert("Upload failed. Check console for details.");
     }
 };
   const formStyle = {

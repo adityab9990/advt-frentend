@@ -1,112 +1,63 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react'; // Added useCallback
 import axios from 'axios';
 import { Link } from 'react-router-dom';
 
-const Dashboard = () => {
-  // 1. All States
+const AdvertismentList = () => {
   const [ads, setAds] = useState([]);
-  const [search, setSearch] = useState({ advtNo: '', advtName: '', category: '', publicationDate: '' });
-  const [editingAd, setEditingAd] = useState(null);
+  const [search, setSearch] = useState({ advtNo: '', advtName: '' });
 
-  // 2. All Functions
-  const fetchAds = async () => {
+  // Use the PRODUCTION URL
+  const API_URL = 'https://advt-backend-xuoo.onrender.com';
+
+  // 1. Wrap in useCallback so it's stable and can be used as a dependency
+  const fetchAds = useCallback(async () => {
     try {
-      const params = Object.fromEntries(
-        Object.entries(search).filter(([_, value]) => value !== '')
-      );
-      const res = await axios.get('http://localhost:8080/api/advertisements/search', { params });
+      const res = await axios.get(`${API_URL}/api/advertisements/search`, { params: search });
       setAds(res.data);
-    } catch (err) { alert("Error fetching data"); }
-  };
+    } catch (err) { 
+      console.error("Error fetching data:", err); 
+    }
+  }, [search]); // Re-runs when search state changes
 
-  // Optional: Load all data immediately when the page opens
-  useEffect(() => {
-    fetchAds();
-    // eslint-disable-next-line
-  }, []);
+  // 2. Safely call the memoized function
+  useEffect(() => { 
+    fetchAds(); 
+  }, [fetchAds]);
 
-  const handleSearchChange = (e) => {
-    const { name, value } = e.target;
-    setSearch(prev => ({ ...prev, [name]: value }));
-  };
-
-  const handleEditChange = (e) => {
-    const { name, value } = e.target;
-    setEditingAd(prev => ({ ...prev, [name]: value }));
-  };
-
-  const saveUpdate = async () => {
+  const togglePaymentStatus = async (ad) => {
     try {
-      await axios.put(`http://localhost:8080/api/advertisements/${editingAd.id}`, editingAd);
-      alert("Updated successfully!");
-      setEditingAd(null);
-      fetchAds();
-    } catch (err) {
-      alert("Error updating data. Check your backend console.");
+      const updatedAd = { ...ad, isPaid: !ad.isPaid };
+      await axios.put(`${API_URL}/api/advertisements/${ad.id}`, updatedAd);
+      fetchAds(); // Now works perfectly
+    } catch (err) { 
+      alert("Error updating payment status."); 
     }
   };
 
-  // 3. Styles Object (MUST be defined before the return statement)
+  // ... rest of your code remains the same
+  // Just make sure to update the PDF link below:
+  // <a href={`${API_URL}/files/${ad.pdfPath ? ad.pdfPath.replace('uploads/', '') : ''}`} ...>
+  
   const styles = {
     container: { padding: '20px', fontFamily: 'sans-serif' },
-    header: { color: '#333' },
-    searchBox: { padding: '8px', marginRight: '10px', width: '250px', marginBottom: '10px' },
-    button: { padding: '8px 20px', backgroundColor: '#28a745', color: 'white', border: 'none', cursor: 'pointer', borderRadius: '4px' },
-    editButton: { padding: '6px 12px', backgroundColor: '#ffc107', color: '#000', border: 'none', cursor: 'pointer', borderRadius: '4px' },
-    cancelButton: { padding: '8px 20px', backgroundColor: '#dc3545', color: 'white', border: 'none', cursor: 'pointer', borderRadius: '4px', marginLeft: '10px' },
+    searchBox: { padding: '8px', marginRight: '10px', width: '200px' },
+    button: { padding: '8px 16px', backgroundColor: '#007bff', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' },
     table: { width: '100%', borderCollapse: 'collapse', marginTop: '20px' },
-    th: { backgroundColor: '#f8f9fa', padding: '12px', border: '1px solid #dee2e6', textAlign: 'left' },
-    td: { padding: '12px', border: '1px solid #dee2e6' },
-    editCard: { backgroundColor: '#f8f9fa', padding: '20px', border: '1px solid #dee2e6', marginBottom: '20px', borderRadius: '5px' }
+    th: { backgroundColor: '#343a40', color: '#fff', padding: '12px', border: '1px solid #dee2e6', textAlign: 'left' },
+    td: { padding: '12px', border: '1px solid #dee2e6' }
   };
 
-  // 4. Return Statement (The actual UI)
   return (
     <div style={styles.container}>
-      <nav style={{ marginBottom: '20px' }}>
-        <Link to="/add" style={{ color: '#007bff', textDecoration: 'none', fontWeight: 'bold' }}>Add New Advertisement</Link>
-      </nav>
-      
-      <h2 style={styles.header}>Advertisement History</h2>
-
-      {/* The Edit Form */}
-      {editingAd && (
-        <div style={styles.editCard}>
-          <h3>Update Advertisement (ID: {editingAd.id})</h3>
-          <div>
-            <input name="advtNo" value={editingAd.advtNo || ''} style={styles.searchBox} placeholder="Advt No" onChange={handleEditChange} />
-            <input name="advtName" value={editingAd.advtName || ''} style={styles.searchBox} placeholder="Name" onChange={handleEditChange} />
-            <input name="department" value={editingAd.department || ''} style={styles.searchBox} placeholder="Department" onChange={handleEditChange} />
-            <input name="category" value={editingAd.category || ''} style={styles.searchBox} placeholder="Category" onChange={handleEditChange} />
-            <input name="size" value={editingAd.size || ''} style={styles.searchBox} placeholder="Size" onChange={handleEditChange} />
-            <input name="billRupees" value={editingAd.billRupees || ''} type="number" style={styles.searchBox} placeholder="Bill Amount" onChange={handleEditChange} />
-            <input name="publishingDate" value={editingAd.publishingDate || ''} type="date" style={styles.searchBox} onChange={handleEditChange} />
-          </div>
-          <button style={styles.button} onClick={saveUpdate}>Save Changes</button>
-          <button style={styles.cancelButton} onClick={() => setEditingAd(null)}>Cancel</button>
-        </div>
-      )}
-      
-      {/* Search Bar - Fixed to match your new advtName state */}
+      <Link to="/add">Add New Advertisement</Link>
+      <h2>Advertisement History</h2>
       <div>
-        <input name="advtNo" value={search.advtNo} style={styles.searchBox} placeholder="Advt No" onChange={handleSearchChange} />
-        <input name="advtName" value={search.advtName} style={styles.searchBox} placeholder="Advertisement Name" onChange={handleSearchChange} />
+        <input style={styles.searchBox} placeholder="Advt No" onChange={e => setSearch({...search, advtNo: e.target.value})} />
         <button style={styles.button} onClick={fetchAds}>Search</button>
       </div>
-
       <table style={styles.table}>
         <thead>
-          <tr>
-            <th style={styles.th}>Advt No</th>
-            <th style={styles.th}>Name</th>
-            <th style={styles.th}>Department</th>
-            <th style={styles.th}>Category</th>
-            <th style={styles.th}>Size</th>
-            <th style={styles.th}>Bill Amount</th>
-            <th style={styles.th}>Publication Date</th>
-            <th style={styles.th}>PDF</th>
-            <th style={styles.th}>Actions</th>
-          </tr>
+          <tr><th style={styles.th}>Advt No</th><th style={styles.th}>Name</th><th style={styles.th}>Dept</th><th style={styles.th}>Category</th><th style={styles.th}>Size</th><th style={styles.th}>Bill</th><th style={styles.th}>Date</th><th style={styles.th}>Status</th><th style={styles.th}>PDF</th></tr>
         </thead>
         <tbody>
           {ads.map(ad => (
@@ -117,21 +68,12 @@ const Dashboard = () => {
               <td style={styles.td}>{ad.category}</td>
               <td style={styles.td}>{ad.size}</td>
               <td style={styles.td}>₹{ad.billRupees}</td>
+              <td style={styles.td}>{ad.publishingDate}</td>
               <td style={styles.td}>
-                {ad.publishingDate ? new Date(ad.publishingDate).toLocaleDateString() : 'N/A'}
+                <button onClick={() => togglePaymentStatus(ad)}>{ad.isPaid ? 'Paid' : 'Pending'}</button>
               </td>
               <td style={styles.td}>
-                {/* Fallback added in case pdfPath is null */}
-                {ad.pdfPath ? (
-                  <a href={`http://localhost:8080/files/${ad.pdfPath.replace('uploads/', '')}`} target="_blank" rel="noreferrer">
-                    View PDF
-                  </a>
-                ) : 'No PDF'}
-              </td>
-              <td style={styles.td}>
-                <button style={styles.editButton} onClick={() => setEditingAd(ad)}>
-                  Edit
-                </button>
+                <a href={`https://advt-backend-xuoo.onrender.com/files/${ad.pdfPath ? ad.pdfPath.replace('uploads/', '') : ''}`} target="_blank" rel="noreferrer">View</a>
               </td>
             </tr>
           ))}
@@ -140,5 +82,4 @@ const Dashboard = () => {
     </div>
   );
 };
-
-export default Dashboard; 
+export default AdvertismentList;
