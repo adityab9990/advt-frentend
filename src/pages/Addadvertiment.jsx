@@ -28,28 +28,30 @@ const handleSubmit = async (e) => {
     data.append('publishingDate', formData.publishingDate);
     
     try {
-        // FIXED: Added headers configuration
         await axios.post('https://advt-backend-xuoo.onrender.com/api/advertisements/upload', data, {
             headers: {
                 'Content-Type': 'multipart/form-data'
             }
         });
-        alert("Success!");
-    } 
-    catch(error => {
-    // 1. जर सर्व्हरने ५०० (किंवा Conflict 409) एरर दिला असेल
-    if (error.response && (error.response.status === 500 || error.response.status === 409)) {
-        alert("ही जाहिरात आधीच भरली गेली आहे, कृपया नंबर (Advt No) तपासा!");
-    } 
-    // 2. जर इनपुट चुकीचे असेल (400 Bad Request)
-    else if (error.response && error.response.status === 400) {
-        alert("माहिती चुकीची आहे, कृपया पुन्हा तपासा: " + error.response.data);
+        alert("Success! जाहिरात यशस्वीरित्या सेव्ह झाली आहे.");
+        // फॉर्म रीसेट करण्यासाठी (पर्यायी)
+        // setFormData({ ...initialState });
+    } catch (error) { // इथे चूक होती, 'error =>' काढून फक्त 'error' ठेवा
+        
+        // 1. जर सर्व्हरने ५०० (किंवा Conflict 409) एरर दिला असेल
+        if (error.response && (error.response.status === 500 || error.response.status === 409)) {
+            alert("ही जाहिरात आधीच भरली गेली आहे, कृपया नंबर (Advt No) तपासा!");
+        } 
+        // 2. जर इनपुट चुकीचे असेल (400 Bad Request)
+        else if (error.response && error.response.status === 400) {
+            alert("माहिती चुकीची आहे, कृपया पुन्हा तपासा: " + error.response.data);
+        }
+        // 3. इतर सर्व तांत्रिक चुकांसाठी
+        else {
+            alert("काहीतरी तांत्रिक चूक झाली आहे, कृपया पुन्हा प्रयत्न करा.");
+        }
     }
-    // 3. इतर सर्व तांत्रिक चुकांसाठी
-    else {
-        alert("काहीतरी तांत्रिक चूक झाली आहे, कृपया पुन्हा प्रयत्न करा.");
-    }
-});
+  };
   const formStyle = {
     position: 'relative',
     maxWidth: '520px',
